@@ -100,7 +100,7 @@ class FileBrowser {
             el.addEventListener("click", (e) => {
                 e.stopPropagation();
                 if (item.type === "directory") {
-                    this.toggleDir(el, item, depth);
+                    this.loadTree(item.path);
                 } else if (e.ctrlKey || e.metaKey) {
                     this.toggleSelect(item);
                 } else if (e.shiftKey) {
