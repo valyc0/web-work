@@ -817,39 +817,23 @@ class TerminalInstance {
 
     getPwd() {
         return new Promise((resolve) => {
-            const id = Math.random().toString(36).slice(2);
-            const startMarker = `PWDSTART${id}`;
-            const endMarker = `PWDEND${id}`;
-            let buffer = "";
-            let resolved = false;
+            const timeout = setTimeout(() => resolve(null), 3000);
             const origOnMessage = this.socket.onmessage;
-            const timeout = setTimeout(() => {
-                this.socket.onmessage = origOnMessage;
-                if (!resolved) resolve(null);
-            }, 3000);
             this.socket.onmessage = (event) => {
-                origOnMessage(event);
-                if (resolved) return;
-                const consume = (text) => {
-                    const clean = text.replace(/\r/g, "").replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "");
-                    buffer += clean;
-                    if (buffer.includes(endMarker)) {
-                        resolved = true;
-                        clearTimeout(timeout);
-                        this.socket.onmessage = origOnMessage;
-                        const s = buffer.indexOf(startMarker);
-                        const e = buffer.indexOf(endMarker);
-                        const path = buffer.slice(s + startMarker.length, e).trim();
-                        resolve(path || null);
-                    }
-                };
-                if (event.data instanceof Blob) {
-                    event.data.text().then(consume);
-                } else {
-                    consume(event.data);
+                if (typeof event.data === "string") {
+                    try {
+                        const msg = JSON.parse(event.data);
+                        if (msg.type === "pwd") {
+                            clearTimeout(timeout);
+                            this.socket.onmessage = origOnMessage;
+                            resolve(msg.path);
+                            return;
+                        }
+                    } catch (e) {}
                 }
+                origOnMessage(event);
             };
-            this.socket.send(JSON.stringify({ data: `echo ${startMarker}\npwd\necho ${endMarker}\n` }));
+            this.socket.send(JSON.stringify({ type: "pwd" }));
         });
     }
 

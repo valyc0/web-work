@@ -263,6 +263,12 @@ async def terminal_ws(websocket: WebSocket):
                 elif "resize" in msg:
                     winsize = struct.pack("HHHH", msg["rows"], msg["cols"], 0, 0)
                     fcntl.ioctl(master_fd, TIOCSWINSZ, winsize)
+                elif msg.get("type") == "pwd":
+                    try:
+                        cwd = os.readlink(f"/proc/{proc.pid}/cwd")
+                        await websocket.send_json({"type": "pwd", "path": cwd})
+                    except Exception:
+                        pass
             except WebSocketDisconnect:
                 break
             except Exception:
