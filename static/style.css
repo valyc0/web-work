@@ -74,6 +74,18 @@ body {
     color: var(--text-primary);
 }
 
+#current-path {
+    padding: 4px 12px;
+    font-size: 11px;
+    color: var(--accent);
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
 #file-tree {
     flex: 1;
     overflow-y: auto;

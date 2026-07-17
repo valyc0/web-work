@@ -2,13 +2,15 @@
 
 // === FILE BROWSER ===
 class FileBrowser {
-    constructor(containerEl, onFileOpen, toolbarEl) {
+    constructor(containerEl, onFileOpen, toolbarEl, pathDisplayEl) {
         this.container = containerEl;
         this.onFileOpen = onFileOpen;
         this.toolbarEl = toolbarEl;
+        this.pathDisplayEl = pathDisplayEl;
         this.activePath = null;
         this.contextMenu = null;
         this.selectedItems = new Set();
+        this.currentPath = "";
         this.loadTree();
         this.setupDropZone();
         document.addEventListener("keydown", (e) => {
@@ -16,21 +18,38 @@ class FileBrowser {
         });
     }
 
-    async loadTree() {
+    async loadTree(path = "") {
         try {
-            const res = await fetch("/api/tree");
+            const url = path ? `/api/tree?path=${encodeURIComponent(path)}` : "/api/tree";
+            const res = await fetch(url);
             const tree = await res.json();
             this.container.innerHTML = "";
             this.selectedItems.clear();
             this.updateToolbar();
+            this.currentPath = path;
+            this.updatePathDisplay();
             this.renderTree(tree, this.container, 0);
         } catch (e) {
             console.error("Failed to load tree:", e);
         }
     }
 
+    updatePathDisplay() {
+        if (!this.pathDisplayEl) return;
+        this.pathDisplayEl.textContent = this.currentPath || "/";
+        this.pathDisplayEl.title = this.currentPath || "Root";
+    }
+
+    navigateToParent() {
+        if (!this.currentPath) return;
+        const parts = this.currentPath.split("/").filter(Boolean);
+        parts.pop();
+        const parent = parts.join("/");
+        this.loadTree(parent);
+    }
+
     async navigateToPath(targetPath) {
-        await this.loadTree();
+        await this.loadTree(targetPath);
         if (!targetPath || targetPath === ".") return;
         const parts = targetPath.split("/").filter(Boolean);
         let current = "";
@@ -815,28 +834,6 @@ class TerminalInstance {
         this.terminal.clear();
     }
 
-    getPwd() {
-        return new Promise((resolve) => {
-            const timeout = setTimeout(() => resolve(null), 3000);
-            const origOnMessage = this.socket.onmessage;
-            this.socket.onmessage = (event) => {
-                if (typeof event.data === "string") {
-                    try {
-                        const msg = JSON.parse(event.data);
-                        if (msg.type === "pwd") {
-                            clearTimeout(timeout);
-                            this.socket.onmessage = origOnMessage;
-                            resolve(msg.path);
-                            return;
-                        }
-                    } catch (e) {}
-                }
-                origOnMessage(event);
-            };
-            this.socket.send(JSON.stringify({ type: "pwd" }));
-        });
-    }
-
     focus() {
         this.terminal.focus();
     }
@@ -925,11 +922,6 @@ class TerminalManager {
         return this.instances.find(i => i.id === this.activeId);
     }
 
-    getPwd() {
-        const inst = this.getActive();
-        return inst ? inst.getPwd() : Promise.resolve(null);
-    }
-
     clear() {
         const inst = this.getActive();
         if (inst) inst.clear();
@@ -948,6 +940,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const fileTreeContainer = document.getElementById("file-tree");
     const selectionToolbar = document.getElementById("selection-toolbar");
     const terminalPanel = document.getElementById("terminal-panel");
+    const pathDisplay = document.getElementById("current-path");
 
     const editor = new Editor(editorContainer, tabsContainer);
 
@@ -965,7 +958,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Failed to open file:", e);
             alert("Failed to open file: " + e.message);
         }
-    }, selectionToolbar);
+    }, selectionToolbar, pathDisplay);
 
     document.getElementById("btn-open-selected").addEventListener("click", () => fileBrowser.openSelected());
     document.getElementById("btn-delete-selected").addEventListener("click", () => fileBrowser.deleteSelected());
@@ -997,22 +990,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.getElementById("btn-reload-tree").addEventListener("click", () => {
-        fileBrowser.loadTree();
+        fileBrowser.loadTree(fileBrowser.currentPath);
     });
 
-    document.getElementById("btn-follow-dir").addEventListener("click", async () => {
-        const inst = terminal.getActive();
-        if (!inst) return;
-        const pwd = await inst.getPwd();
-        if (!pwd) return;
-        try {
-            const res = await fetch("/api/root");
-            const { root } = await res.json();
-            let rel = pwd.startsWith(root) ? pwd.slice(root.length).replace(/^\//, "") : null;
-            if (rel !== null) fileBrowser.navigateToPath(rel);
-        } catch (e) {
-            console.error("Failed to get root:", e);
-        }
+    document.getElementById("btn-parent-dir").addEventListener("click", () => {
+        fileBrowser.navigateToParent();
     });
 
     window.addEventListener("resize", () => {

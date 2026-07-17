@@ -30,10 +30,6 @@ if getattr(sys, "frozen", False):
 else:
     static_dir = Path(__file__).parent / "static"
 
-@app.get("/api/root")
-async def get_root():
-    return {"root": str(ROOT_DIR)}
-
 @app.get("/")
 async def index():
     return FileResponse(static_dir / "index.html")
@@ -263,12 +259,6 @@ async def terminal_ws(websocket: WebSocket):
                 elif "resize" in msg:
                     winsize = struct.pack("HHHH", msg["rows"], msg["cols"], 0, 0)
                     fcntl.ioctl(master_fd, TIOCSWINSZ, winsize)
-                elif msg.get("type") == "pwd":
-                    try:
-                        cwd = os.readlink(f"/proc/{proc.pid}/cwd")
-                        await websocket.send_json({"type": "pwd", "path": cwd})
-                    except Exception:
-                        pass
             except WebSocketDisconnect:
                 break
             except Exception:
