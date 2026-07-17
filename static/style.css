@@ -56,6 +56,24 @@ body {
     color: var(--text-secondary);
 }
 
+#sidebar-actions {
+    display: flex;
+    gap: 4px;
+}
+
+#sidebar-actions button {
+    font-size: 14px;
+    padding: 0 4px;
+    border: none;
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+#sidebar-actions button:hover {
+    opacity: 1;
+    color: var(--text-primary);
+}
+
 #file-tree {
     flex: 1;
     overflow-y: auto;

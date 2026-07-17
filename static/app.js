@@ -29,6 +29,32 @@ class FileBrowser {
         }
     }
 
+    async navigateToPath(targetPath) {
+        await this.loadTree();
+        if (!targetPath) return;
+        const parts = targetPath.split("/").filter(Boolean);
+        let current = "";
+        for (const part of parts) {
+            current = current ? `${current}/${part}` : part;
+            const el = this.container.querySelector(`.tree-item[data-path="${current}"]`);
+            if (el && el.classList.contains("dir")) {
+                const existing = el.nextElementSibling;
+                if (!existing || !existing.classList.contains("tree-children")) {
+                    el.querySelector(".arrow").classList.add("open");
+                    const container = document.createElement("div");
+                    container.className = "tree-children";
+                    el.parentNode.insertBefore(container, el.nextSibling);
+                    await this.loadSubDir(current, container, parts.indexOf(part) + 1);
+                }
+            }
+        }
+        const finalEl = this.container.querySelector(`.tree-item[data-path="${targetPath}"]`);
+        if (finalEl) {
+            finalEl.scrollIntoView({ block: "center" });
+            finalEl.classList.add("active");
+        }
+    }
+
     renderTree(items, parent, depth) {
         for (const item of items) {
             const el = document.createElement("div");
@@ -787,6 +813,30 @@ class TerminalInstance {
         this.terminal.clear();
     }
 
+    getPwd() {
+        return new Promise((resolve) => {
+            const marker = "__PWD_" + Math.random().toString(36).slice(2) + "__";
+            let buffer = "";
+            const origHandler = this._onDataBound;
+            const timeout = setTimeout(() => {
+                this._onDataBound = origHandler;
+                resolve(null);
+            }, 2000);
+            this._onDataBound = (data) => {
+                origHandler(data);
+                buffer += data;
+                if (buffer.includes(marker)) {
+                    clearTimeout(timeout);
+                    this._onDataBound = origHandler;
+                    const match = buffer.match(new RegExp(`${marker}\\n(.+?)\\n${marker}`));
+                    resolve(match ? match[1] : null);
+                }
+            };
+            this.terminal.onData(this._onDataBound);
+            this.socket.send(JSON.stringify({ data: `echo "${marker}"\\npwd\\necho "${marker}"\\n` }));
+        });
+    }
+
     focus() {
         this.terminal.focus();
     }
@@ -875,6 +925,11 @@ class TerminalManager {
         return this.instances.find(i => i.id === this.activeId);
     }
 
+    getPwd() {
+        const inst = this.getActive();
+        return inst ? inst.getPwd() : Promise.resolve(null);
+    }
+
     clear() {
         const inst = this.getActive();
         if (inst) inst.clear();
@@ -939,6 +994,17 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (e) {
             alert("Failed: " + e.message);
         }
+    });
+
+    document.getElementById("btn-reload-tree").addEventListener("click", () => {
+        fileBrowser.loadTree();
+    });
+
+    document.getElementById("btn-follow-dir").addEventListener("click", async () => {
+        const inst = terminal.getActive();
+        if (!inst) return;
+        const pwd = await inst.getPwd();
+        if (pwd) fileBrowser.navigateToPath(pwd);
     });
 
     window.addEventListener("resize", () => {
