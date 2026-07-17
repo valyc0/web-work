@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebWork</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <div id="sidebar">
+            <div id="sidebar-header">
+                <span>Files</span>
+                <button id="btn-new-folder" title="New Folder">+</button>
+            </div>
+            <div id="selection-toolbar">
+                <span class="selection-count">0 selected</span>
+                <button id="btn-open-selected" title="Open">Open</button>
+                <button id="btn-delete-selected" title="Delete">Delete</button>
+                <button id="btn-download-selected" title="Download">Download</button>
+            </div>
+            <div id="file-tree"></div>
+        </div>
+        <div id="right-panel">
+            <div id="main">
+                <div id="editor-tabs"></div>
+                <div id="editor-container"></div>
+            </div>
+            <div id="terminal-drag-handle"></div>
+            <div id="terminal-panel">
+                <div id="terminal-header">
+                    <div id="terminal-tabs"></div>
+                    <div id="terminal-actions">
+                        <button id="btn-terminal-new" title="New Terminal">+</button>
+                        <button id="btn-terminal-clear" title="Clear">x</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="/static/app.js"></script>
+</body>
+</html>
