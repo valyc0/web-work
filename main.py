@@ -30,6 +30,10 @@ if getattr(sys, "frozen", False):
 else:
     static_dir = Path(__file__).parent / "static"
 
+@app.get("/api/root")
+async def get_root():
+    return {"root": str(ROOT_DIR)}
+
 @app.get("/")
 async def index():
     return FileResponse(static_dir / "index.html")

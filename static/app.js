@@ -1012,7 +1012,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const inst = terminal.getActive();
         if (!inst) return;
         const pwd = await inst.getPwd();
-        if (pwd) fileBrowser.navigateToPath(pwd);
+        if (!pwd) return;
+        try {
+            const res = await fetch("/api/root");
+            const { root } = await res.json();
+            let rel = pwd.startsWith(root) ? pwd.slice(root.length).replace(/^\//, "") : null;
+            if (rel !== null) fileBrowser.navigateToPath(rel);
+        } catch (e) {
+            console.error("Failed to get root:", e);
+        }
     });
 
     window.addEventListener("resize", () => {
