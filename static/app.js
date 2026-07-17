@@ -815,26 +815,33 @@ class TerminalInstance {
 
     getPwd() {
         return new Promise((resolve) => {
-            const marker = "__PWD_" + Math.random().toString(36).slice(2) + "__";
+            const id = Math.random().toString(36).slice(2);
+            const startMarker = `PWDSTART${id}`;
+            const endMarker = `PWDEND${id}`;
             let buffer = "";
+            let resolved = false;
             const origOnMessage = this.socket.onmessage;
             const timeout = setTimeout(() => {
                 this.socket.onmessage = origOnMessage;
-                resolve(null);
-            }, 2000);
+                if (!resolved) resolve(null);
+            }, 3000);
             this.socket.onmessage = (event) => {
                 origOnMessage(event);
-                if (event.data instanceof Blob) return;
-                buffer += event.data;
-                if (buffer.includes(marker)) {
+                if (event.data instanceof Blob || resolved) return;
+                const raw = event.data;
+                const clean = raw.replace(/\r/g, "").replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "");
+                buffer += clean;
+                if (buffer.includes(endMarker)) {
+                    resolved = true;
                     clearTimeout(timeout);
                     this.socket.onmessage = origOnMessage;
-                    const escaped = marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-                    const match = buffer.match(new RegExp(`${escaped}\\n(.+?)\\n${escaped}`));
-                    resolve(match ? match[1] : null);
+                    const s = buffer.indexOf(startMarker);
+                    const e = buffer.indexOf(endMarker);
+                    const path = buffer.slice(s + startMarker.length, e).trim();
+                    resolve(path || null);
                 }
             };
-            this.socket.send(JSON.stringify({ data: `echo ${marker}\npwd\necho ${marker}\n` }));
+            this.socket.send(JSON.stringify({ data: `echo ${startMarker}\npwd\necho ${endMarker}\n` }));
         });
     }
 
