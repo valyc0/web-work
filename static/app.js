@@ -817,23 +817,24 @@ class TerminalInstance {
         return new Promise((resolve) => {
             const marker = "__PWD_" + Math.random().toString(36).slice(2) + "__";
             let buffer = "";
-            const origHandler = this._onDataBound;
+            const origOnMessage = this.socket.onmessage;
             const timeout = setTimeout(() => {
-                this._onDataBound = origHandler;
+                this.socket.onmessage = origOnMessage;
                 resolve(null);
             }, 2000);
-            this._onDataBound = (data) => {
-                origHandler(data);
-                buffer += data;
+            this.socket.onmessage = (event) => {
+                origOnMessage(event);
+                if (event.data instanceof Blob) return;
+                buffer += event.data;
                 if (buffer.includes(marker)) {
                     clearTimeout(timeout);
-                    this._onDataBound = origHandler;
-                    const match = buffer.match(new RegExp(`${marker}\\n(.+?)\\n${marker}`));
+                    this.socket.onmessage = origOnMessage;
+                    const escaped = marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                    const match = buffer.match(new RegExp(`${escaped}\\n(.+?)\\n${escaped}`));
                     resolve(match ? match[1] : null);
                 }
             };
-            this.terminal.onData(this._onDataBound);
-            this.socket.send(JSON.stringify({ data: `echo "${marker}"\\npwd\\necho "${marker}"\\n` }));
+            this.socket.send(JSON.stringify({ data: `echo ${marker}\npwd\necho ${marker}\n` }));
         });
     }
 
