@@ -31,27 +31,29 @@ class FileBrowser {
 
     async navigateToPath(targetPath) {
         await this.loadTree();
-        if (!targetPath) return;
+        if (!targetPath || targetPath === ".") return;
         const parts = targetPath.split("/").filter(Boolean);
         let current = "";
-        for (const part of parts) {
-            current = current ? `${current}/${part}` : part;
+        for (let i = 0; i < parts.length; i++) {
+            current = current ? `${current}/${parts[i]}` : parts[i];
             const el = this.container.querySelector(`.tree-item[data-path="${current}"]`);
             if (el && el.classList.contains("dir")) {
                 const existing = el.nextElementSibling;
                 if (!existing || !existing.classList.contains("tree-children")) {
                     el.querySelector(".arrow").classList.add("open");
-                    const container = document.createElement("div");
-                    container.className = "tree-children";
-                    el.parentNode.insertBefore(container, el.nextSibling);
-                    await this.loadSubDir(current, container, parts.indexOf(part) + 1);
+                    const childContainer = document.createElement("div");
+                    childContainer.className = "tree-children";
+                    el.parentNode.insertBefore(childContainer, el.nextSibling);
+                    await this.loadSubDir(current, childContainer, i + 1);
                 }
             }
         }
-        const finalEl = this.container.querySelector(`.tree-item[data-path="${targetPath}"]`);
-        if (finalEl) {
-            finalEl.scrollIntoView({ block: "center" });
-            finalEl.classList.add("active");
+        if (parts.length > 0) {
+            const finalEl = this.container.querySelector(`.tree-item[data-path="${targetPath}"]`);
+            if (finalEl) {
+                finalEl.scrollIntoView({ block: "center" });
+                finalEl.classList.add("active");
+            }
         }
     }
 
