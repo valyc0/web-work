@@ -288,11 +288,18 @@ if __name__ == "__main__":
 ║  http://localhost:{port:<24}║
 ║  Root: {str(root)[:33]:<34}║
 ║                                          ║
-║  Usage:                                  ║
+║  Imposta root con WEBWORK_ROOT           ║
+║  Es: WEBWORK_ROOT=/home/user ./webwork   ║
+║                                          ║
+║  Usage (source):                         ║
 ║    ./start.sh                            ║
 ║    ./start.sh /path/to/project           ║
 ║    ./start.sh /path 3000                 ║
-║    WEBWORK_PORT=3000 ./start.sh          ║
+║                                          ║
+║  Usage (standalone):                     ║
+║    ./webwork                             ║
+║    WEBWORK_ROOT=/path ./webwork          ║
+║    WEBWORK_ROOT=/path WEBWORK_PORT=3000  ║
 ║                                          ║
 ║  Ctrl+C to stop                          ║
 ╚══════════════════════════════════════════╝
