@@ -41,11 +41,10 @@ class FileBrowser {
     }
 
     navigateToParent() {
-        if (!this.currentPath) return;
+        if (!this.currentPath && this.currentPath !== "") return;
         const parts = this.currentPath.split("/").filter(Boolean);
         parts.pop();
-        const parent = parts.join("/");
-        this.loadTree(parent);
+        this.loadTree(parts.join("/"));
     }
 
     async navigateToPath(targetPath) {
