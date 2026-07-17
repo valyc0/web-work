@@ -53,6 +53,21 @@ pip install pyinstaller
 
 Genera `dist/webwork` (Linux) o `dist/webwork.exe` (Windows).
 
+### Esecuzione dopo la distribuzione
+
+Dopo aver copiato l'eseguibile su un'altra macchina:
+
+```bash
+# Usa la directory corrente come root
+./webwork
+
+# Specifica una cartella diversa
+WEBWORK_ROOT=/path/to/project ./webwork
+
+# Specifica porta e cartella
+WEBWORK_ROOT=/path/to/project WEBWORK_PORT=3000 ./webwork
+```
+
 ## Struttura
 
 ```
