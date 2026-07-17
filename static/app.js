@@ -829,18 +829,24 @@ class TerminalInstance {
             }, 3000);
             this.socket.onmessage = (event) => {
                 origOnMessage(event);
-                if (event.data instanceof Blob || resolved) return;
-                const raw = event.data;
-                const clean = raw.replace(/\r/g, "").replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "");
-                buffer += clean;
-                if (buffer.includes(endMarker)) {
-                    resolved = true;
-                    clearTimeout(timeout);
-                    this.socket.onmessage = origOnMessage;
-                    const s = buffer.indexOf(startMarker);
-                    const e = buffer.indexOf(endMarker);
-                    const path = buffer.slice(s + startMarker.length, e).trim();
-                    resolve(path || null);
+                if (resolved) return;
+                const consume = (text) => {
+                    const clean = text.replace(/\r/g, "").replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "");
+                    buffer += clean;
+                    if (buffer.includes(endMarker)) {
+                        resolved = true;
+                        clearTimeout(timeout);
+                        this.socket.onmessage = origOnMessage;
+                        const s = buffer.indexOf(startMarker);
+                        const e = buffer.indexOf(endMarker);
+                        const path = buffer.slice(s + startMarker.length, e).trim();
+                        resolve(path || null);
+                    }
+                };
+                if (event.data instanceof Blob) {
+                    event.data.text().then(consume);
+                } else {
+                    consume(event.data);
                 }
             };
             this.socket.send(JSON.stringify({ data: `echo ${startMarker}\npwd\necho ${endMarker}\n` }));
